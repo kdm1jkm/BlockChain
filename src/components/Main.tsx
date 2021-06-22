@@ -79,23 +79,100 @@ function useRangedNum(
   return [num, setNum];
 }
 
+function useToggleBoolean(
+  initialValue: boolean
+): [boolean, () => void, (boolean) => void] {
+  const [value, setValue] = useState(initialValue);
+
+  return [
+    value,
+    () => {
+      setValue(!value);
+    },
+    (v) => {
+      setValue(v);
+    },
+  ];
+}
+
+// From https://overreacted.io/making-setinterval-declarative-with-react-hooks/
+function useInterval(callback: () => void, delay: number) {
+  const savedCallback = useRef<() => void>();
+
+  // Remember the latest callback.
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  // Set up the interval.
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
+}
+
 const Main = () => {
   const [prevHash, setPrevHash] = useState("");
   const [content, setContent] = useState("");
   const [nonce, setNonce] = useState(0);
   const [hash, setHash] = useState("");
   const [difficulty, setDifficulty] = useRangedNum(0, { min: 0, max: 64 });
+  const [isValidBlock, setValidBlock] = useState(true);
+
+  const [isLookingForNonce, toggleLookingForNonce, setLookingForNonce] =
+    useToggleBoolean(false);
 
   const blockChain = useRef(new BlockChain(undefined));
 
-  // Update Value in instance
+  const [delay, setDelay] = useState<number | null>(null);
+  useInterval(() => {
+    setNonce(nonce + 1);
+  }, delay);
+
   useEffect(() => {
-    const lastBlock = blockChain.current.lastBlock;
-    lastBlock.content = new Content(content);
-    lastBlock.nonce = nonce;
+    blockChain.current.lastBlock.content = new Content(content);
+  }, [content]);
+
+  useEffect(() => {
+    blockChain.current.lastBlock.nonce = nonce;
+  }, [nonce]);
+
+  useEffect(() => {
     blockChain.current.difficulty = difficulty;
+  }, [difficulty]);
+
+  useEffect(() => {
     setHash(blockChain.current.lastBlock.hash);
-  }, [content, nonce, difficulty]);
+  }, [prevHash, content, nonce]);
+
+  useEffect(() => {
+    setValidBlock(blockChain.current.checkLastHashValid());
+    if (isValidBlock === true) {
+      if (isLookingForNonce === true) setNonce(nonce - 1);
+      setLookingForNonce(false);
+    }
+  }, [hash, difficulty]);
+
+  useEffect(() => {
+    setDelay(isLookingForNonce === true ? 1 : null);
+  }, [isLookingForNonce]);
+
+  // // Update value in instance
+  // useEffect(() => {
+  //   const lastBlock = blockChain.current.lastBlock;
+  //   lastBlock.content = new Content(content);
+  //   lastBlock.nonce = nonce;
+  //   blockChain.current.difficulty = difficulty;
+  //   setHash(blockChain.current.lastBlock.hash);
+  //   setValidBlock(blockChain.current.checkLastHashValid());
+  //   if (isValidBlock) setLookingForNonce(false);
+  //   console.log(lastBlock);
+  // }, [prevHash, content, nonce, difficulty]);
 
   return (
     <>
@@ -116,7 +193,7 @@ const Main = () => {
               flexGrow={1}
             />
           </Box>
-          <Box flexGrow={0} width={100}>
+          <Box flexGrow={0} width={150}>
             <Label>Nonce: </Label>
             <Input
               type="number"
@@ -124,7 +201,7 @@ const Main = () => {
               onChange={(e) => {
                 setNonce(parseInt(e.target.value));
               }}
-              flexGrow={0}
+              flexGrow={1}
             />
           </Box>
           <Box flexGrow={0} width={115}>
@@ -133,7 +210,7 @@ const Main = () => {
               type="number"
               value={difficulty}
               onChange={(e) => setDifficulty(parseInt(e.target.value))}
-              flexGrow={0}
+              flexGrow={1}
             />
           </Box>
         </InvisibleBox>
@@ -141,9 +218,17 @@ const Main = () => {
           <Label>Hash: {hash}</Label>
         </Box>
         <InvisibleBox>
-          <Button flexGrow={1}>Mine</Button>
-          <Button flexGrow={0} width={150}>
-            Find Nonce
+          <Button flexGrow={1} disabled={!isValidBlock}>
+            Mine
+          </Button>
+          <Button
+            flexGrow={0}
+            width={150}
+            onClick={() => {
+              toggleLookingForNonce();
+            }}
+          >
+            {isLookingForNonce ? "Stop Finding" : "Find Nonce"}
           </Button>
         </InvisibleBox>
       </OutBox>
