@@ -72,8 +72,8 @@ function useRangedNum(
 
   useEffect(() => {
     if (!range) return;
-    if (range.max) setNum(Math.min(range.max, num));
-    if (range.min) setNum(Math.max(range.min, num));
+    if (range.max !== undefined) setNum(Math.min(range.max, num));
+    if (range.min !== undefined) setNum(Math.max(range.min, num));
   }, [num]);
 
   return [num, setNum];
