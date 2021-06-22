@@ -162,18 +162,6 @@ const Main = () => {
     setDelay(isLookingForNonce === true ? 1 : null);
   }, [isLookingForNonce]);
 
-  // // Update value in instance
-  // useEffect(() => {
-  //   const lastBlock = blockChain.current.lastBlock;
-  //   lastBlock.content = new Content(content);
-  //   lastBlock.nonce = nonce;
-  //   blockChain.current.difficulty = difficulty;
-  //   setHash(blockChain.current.lastBlock.hash);
-  //   setValidBlock(blockChain.current.checkLastHashValid());
-  //   if (isValidBlock) setLookingForNonce(false);
-  //   console.log(lastBlock);
-  // }, [prevHash, content, nonce, difficulty]);
-
   return (
     <>
       <Header>BlockChain Simulator</Header>
