@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import CryptoJS from "crypto-js";
 import styled from "styled-components";
 import BlockChain from "../scripts/BlockChain";
 import Content from "../scripts/Content";
