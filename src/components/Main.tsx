@@ -131,7 +131,11 @@ const Main = () => {
 
   const [delay, setDelay] = useState<number | null>(null);
   useInterval(() => {
-    setNonce(nonce + 1);
+    if (!blockChain.current.checkLastHashValid()) {
+      setNonce(nonce + 1);
+    } else {
+      setLookingForNonce(false);
+    }
   }, delay);
 
   useEffect(() => {
@@ -152,14 +156,10 @@ const Main = () => {
 
   useEffect(() => {
     setValidBlock(blockChain.current.checkLastHashValid());
-    if (isValidBlock === true) {
-      if (isLookingForNonce === true) setNonce(nonce - 1);
-      setLookingForNonce(false);
-    }
   }, [hash, difficulty]);
 
   useEffect(() => {
-    setDelay(isLookingForNonce === true ? 1 : null);
+    setDelay(isLookingForNonce === true ? 0 : null);
   }, [isLookingForNonce]);
 
   return (
@@ -214,6 +214,7 @@ const Main = () => {
             width={150}
             onClick={() => {
               toggleLookingForNonce();
+              if (isValidBlock) setLookingForNonce(false);
             }}
           >
             {isLookingForNonce ? "Stop Finding" : "Find Nonce"}
