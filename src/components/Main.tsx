@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import BlockChain from "../scripts/BlockChain";
 import Content from "../scripts/Content";
+import { IBlock } from "./Block";
+import Blocks from "./Blocks";
 
 const Header = styled.h1`
   text-align: center;
@@ -18,11 +20,23 @@ const OutBox = styled.div`
   min-width: 635px;
 `;
 
-const InvisibleBox = styled.div`
+const OutBoxRow = styled(OutBox)`
+  flex-direction: row;
+  flex-wrap: wrap;
+`;
+
+export const InvisibleBox = styled.div`
   display: flex;
 `;
 
-const Box = styled.div<{ flexGrow?: number; width?: number }>`
+export const Box = styled.div<{
+  flexGrow?: number;
+  width?: [number, "px" | "%"];
+  column?: boolean;
+  includeMargin?: boolean;
+  multiline?: boolean;
+  cutOverflow?: boolean;
+}>`
   display: flex;
   border: 1px solid gray;
   margin: 10px;
@@ -30,7 +44,11 @@ const Box = styled.div<{ flexGrow?: number; width?: number }>`
   border-radius: 10px;
   flex-grow: ${(p) => (p.flexGrow !== undefined ? p.flexGrow : 1)};
   flex-shrink: 1;
-  width: ${(p) => (p.width ? `${p.width}px` : `auto`)};
+  flex-direction: ${(p) => (p.column ? "column" : "row")};
+  width: ${(p) => (p.width ? `${p.width[0]}${p.width[1]}` : "auto")};
+  box-sizing: ${(p) => (p.includeMargin ? "border-box" : "content-box")};
+  flex-wrap: ${(p) => (p.multiline ? "wrap" : "nowrap")};
+  ${(p) => (p.cutOverflow ? "overflow: clip;" : "")}
 `;
 
 const Label = styled.p``;
@@ -71,8 +89,8 @@ function useRangedNum(
 
   useEffect(() => {
     if (!range) return;
-    if (range.max !== undefined) setNum(Math.min(range.max, num));
-    if (range.min !== undefined) setNum(Math.max(range.min, num));
+    if (range.max !== undefined && range.max < num) setNum(range.max);
+    else if (range.min !== undefined && range.min > num) setNum(range.min);
   }, [num]);
 
   return [num, setNum];
@@ -115,18 +133,21 @@ function useInterval(callback: () => void, delay: number) {
   }, [delay]);
 }
 
-const Main = () => {
+export default function Main() {
+  const blockChain = useRef(new BlockChain(undefined));
+
   const [prevHash, setPrevHash] = useState("");
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(
+    blockChain.current.lastBlock.content.data
+  );
   const [nonce, setNonce] = useState(0);
   const [hash, setHash] = useState("");
-  const [difficulty, setDifficulty] = useRangedNum(0, { min: 0, max: 64 });
+  const [difficulty, setDifficulty] = useRangedNum(3, { min: 0, max: 64 });
   const [isValidBlock, setValidBlock] = useState(true);
+  const [blocks, setBlocks] = useState<IBlock[]>();
 
   const [isLookingForNonce, toggleLookingForNonce, setLookingForNonce] =
     useToggleBoolean(false);
-
-  const blockChain = useRef(new BlockChain(undefined));
 
   const [delay, setDelay] = useState<number | null>(null);
   useInterval(() => {
@@ -180,18 +201,20 @@ const Main = () => {
               flexGrow={1}
             />
           </Box>
-          <Box flexGrow={0} width={150}>
+          <Box flexGrow={0} width={[150, "px"]}>
             <Label>Nonce: </Label>
             <Input
               type="number"
               value={nonce}
+              min={0}
+              max={64}
               onChange={(e) => {
                 setNonce(parseInt(e.target.value));
               }}
               flexGrow={1}
             />
           </Box>
-          <Box flexGrow={0} width={115}>
+          <Box flexGrow={0} width={[115, "px"]}>
             <Label>Difficulty: </Label>
             <Input
               type="number"
@@ -205,7 +228,29 @@ const Main = () => {
           <Label>Hash: {hash}</Label>
         </Box>
         <InvisibleBox>
-          <Button flexGrow={1} disabled={!isValidBlock}>
+          <Button
+            flexGrow={1}
+            disabled={!isValidBlock}
+            onClick={(e) => {
+              if (!isValidBlock) return;
+
+              blockChain.current.addBlock();
+              setPrevHash(hash);
+              setContent(blockChain.current.lastBlock.content.data);
+              setNonce(0);
+
+              const b: IBlock[] = [];
+              blockChain.current.blocks.slice(0, -1).forEach((block) => {
+                b.push({
+                  content: block.content.data,
+                  hash: block.hash,
+                  nonce: block.nonce,
+                  prevHash: block.prevHash,
+                });
+              });
+              setBlocks(b);
+            }}
+          >
             Mine
           </Button>
           <Button
@@ -220,7 +265,13 @@ const Main = () => {
           </Button>
         </InvisibleBox>
       </OutBox>
+      {blocks ? (
+        <OutBoxRow>
+          <Blocks blocks={blocks} />
+        </OutBoxRow>
+      ) : (
+        ""
+      )}
     </>
   );
-};
-export default Main;
+}

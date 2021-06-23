@@ -2,7 +2,7 @@ import Block from "./Block";
 import Content from "./Content";
 
 export default class BlockChain {
-  private readonly blocks: Array<Block> = new Array<Block>(this.genesisBlock);
+  public readonly blocks: Array<Block> = new Array<Block>(this.genesisBlock);
 
   constructor(
     private readonly genesisBlock: Block = new Block(
@@ -13,7 +13,9 @@ export default class BlockChain {
   ) {}
 
   public checkLastHashValid(): boolean {
-    return this.lastBlock.hash.startsWith("0".repeat(this.difficulty));
+    return this.lastBlock.hash.startsWith(
+      "0".repeat(Math.max(this.difficulty, 0))
+    );
   }
 
   public addBlock(
