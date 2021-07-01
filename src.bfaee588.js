@@ -598,4 +598,4 @@ var e;!function(r,i,a){"object"==typeof exports?module.exports=exports=i(require
 },{"./cjs/react-dom.production.min.js":"i17t"}],"zo2T":[function(require,module,exports) {
 "use strict";var e=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(exports,"__esModule",{value:!0});var t=e(require("./components/Main")),r=e(require("react")),u=e(require("react-dom"));window.React=r.default,u.default.render(React.createElement(t.default,null),document.getElementById("root"));
 },{"./components/Main":"Izf3","react":"n8MK","react-dom":"NKHc"}]},{},["zo2T"], null)
-//# sourceMappingURL=/BlockChain/src.bfaee588.js.map
+//# sourceMappingURL=/src.bfaee588.js.map
